@@ -1,0 +1,11 @@
+# Ignore virtual environments
+.venv/
+alexnet-env/
+data/
+
+# Ignore model files if they are large
+*.pth
+
+# Ignore temporary or cache files
+__pycache__/
+*.log
