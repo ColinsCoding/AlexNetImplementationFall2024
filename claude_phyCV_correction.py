@@ -5,8 +5,6 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from phycv import VEVID, PST
 import numpy as np
-import tempfile
-import cv2
 
 class PhyCVTransform:
     def __init__(self, transform_type='vevid'):
@@ -19,20 +17,13 @@ class PhyCVTransform:
     def __call__(self, img):
         img_np = np.array(img)
 
-        with tempfile.NamedTemporaryFile(suffix=".png") as tmpfile:
-            # Save the numpy array as an image
-            cv2.imwrite(tmpfile.name, cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR))
-            
-            # Use the temporary file path in the VEVID/PST transformation
-            if self.transform_type == 'vevid':
-                processed = self.transform.run(img_file=tmpfile.name, S=0.4, T=0.001, b=0.25, G=0.8)
-            elif self.transform_type == 'pst':
-                processed = self.transform.run(img_file=tmpfile.name, S=0.4, W=20, sigma_LPF=0.1, thresh_min=0.0, thresh_max=0.8, morph_flag=1)
+        if self.transform_type == 'vevid':
+            # Apply VEVID with required parameters
+            processed = self.transform.run(img_np, S=0.4, T=0.001, b=0.25, G=0.8)
+        elif self.transform_type == 'pst':
+            # Apply PST with required parameters
+            processed = self.transform.run(img_np, S=0.4, W=20, sigma_LPF=0.1, thresh_min=0.0, thresh_max=0.8, morph_flag=1)
 
-        # Ensure the processed image has 3 channels
-        if len(processed.shape) == 2:  # Grayscale image
-            processed = cv2.cvtColor(processed, cv2.COLOR_GRAY2RGB)
-        
         return torchvision.transforms.ToPILImage()(processed)
 
 # Define AlexNet for CIFAR-10
@@ -70,6 +61,66 @@ class AlexNet(nn.Module):
         x = self.classifier(x)
         return x
 
+# class PhyCVTransform:
+#     def __init__(self, transform_type='vevid'):
+#         self.transform_type = transform_type
+#         if transform_type == 'vevid':
+#             self.transform = VEVID()
+#         elif transform_type == 'pst':
+#             self.transform = PST()
+
+#     def __call__(self, img):
+#         # Convert PIL Image to numpy array
+#         img_np = np.array(img)
+        
+#         if self.transform_type == 'vevid':
+#             # Apply VEVID
+#             processed = self.transform.run(img_np, S=0.4, T=0.001, b=0.25, G=0.8)
+#         elif self.transform_type == 'pst':
+#             # Apply PST
+#             processed = self.transform.run(img_np, S=0.4, W=20, sigma_LPF=0.1, thresh_min=0.0, thresh_max=0.8, morph_flag=1)
+        
+#         # Convert back to PIL Image
+#         return torchvision.transforms.ToPILImage()(processed)
+
+class PhyCVTransform:
+    def __init__(self, transform_type='vevid'):
+        self.transform_type = transform_type
+        if transform_type == 'vevid':
+            self.transform = VEVID()
+        elif transform_type == 'pst':
+            self.transform = PST()
+
+    def __call__(self, img):
+        img_np = np.array(img)
+
+        if self.transform_type == 'vevid':
+            # Apply VEVID with required parameters
+            processed = self.transform.run(img_np, S=0.4, T=0.001, b=0.25, G=0.8)
+        elif self.transform_type == 'pst':
+            # Apply PST with required parameters
+            processed = self.transform.run(img_np, S=0.4, W=20, sigma_LPF=0.1, thresh_min=0.0, thresh_max=0.8, morph_flag=1)
+
+        return torchvision.transforms.ToPILImage()(processed)
+
+# class PhyCVTransform:
+#     def __init__(self, transform_type='vevid'):
+#         self.transform_type = transform_type
+#         if transform_type == 'vevid':
+#             self.transform = VEVID()
+#         elif transform_type == 'pst':
+#             self.transform = PST()
+
+#     def __call__(self, img):
+#         img_np = np.array(img)
+
+#         if self.transform_type == 'vevid':
+#             processed = self.transform.run(img_np)
+#         elif self.transform_type == 'pst':
+#             processed = self.transform.run(img_np)
+
+#         return torchvision.transforms.ToPILImage()(processed)
+
 def evaluate(model, dataloader, device):
     model.eval()
     correct = 0
@@ -87,8 +138,7 @@ def evaluate(model, dataloader, device):
 if __name__ == "__main__":
     # PhyCV transform pipeline
     transform_phycv = transforms.Compose([
-        # PhyCVTransform(transform_type='vevid'),  # or 'pst'
-        PhyCVTransform(transform_type='pst'),
+        PhyCVTransform(transform_type='vevid'),  # or 'pst'
         transforms.Resize((32, 32)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))

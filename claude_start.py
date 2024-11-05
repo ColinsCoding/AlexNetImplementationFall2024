@@ -104,7 +104,3 @@ if __name__ == "__main__":
             correct += (predicted == labels).sum().item()
 
     print(f'Accuracy on the 10000 test images: {100 * correct / total}%')
-
-
-# Write a shell cmd to copy two files to the desktop
-# cp file1.txt file2.txt ~/Desktop
